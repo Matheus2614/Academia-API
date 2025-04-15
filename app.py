@@ -40,17 +40,17 @@ def clientes_lista():
     else:
         return jsonify({'Mensagem': 'Erro! Nenhuma charada encontrada.'}), 404
 
-#Rota método GET, charada por ID
-@app.route('/clientes/<id>', methods=['GET'])
-def busca(id):
-    doc_ref = db.collection('cadastro').document(id) #Aponta este documento
-    doc = doc_ref.get().to_dict() #Pega o que tem dentro do documento
+@app.route('/clientes/<cpf>', methods=['GET'])
+def busca_por_cpf(cpf):
+    clientes_ref = db.collection('cadastro')
+    query = clientes_ref.where('cpf', '==', cpf).limit(1) # Busca o primeiro cliente com esse CPF
+    resultados = query.get()
 
-    if doc:
-        return jsonify(doc), 200
-    
-    else: 
-        return jsonify({'mensagem': 'Erro! Cliente não encontrado.'})
+    if resultados:
+        for doc in resultados:
+            return jsonify(doc.to_dict()), 200
+    else:
+        return jsonify({'mensagem': 'Erro! Cliente não encontrado.'}), 404
     
 #Rota método POST, adicionar charada
 @app.route('/clientes', methods=['POST'])
@@ -70,7 +70,8 @@ def adicionar_clientes():
     db.collection('cadastro').document(str(novo_id)).set({
         "id": novo_id,
         "nome": dados['nome'],
-        "cpf": dados['cpf']
+        "cpf": dados['cpf'],
+        "status": 'ativo'
 
     })
 
@@ -88,10 +89,16 @@ def alterar_cadastro(id):
     doc = doc_ref.get()
 
     if doc.exists:
-        doc_ref.update({
+        atualizacao = {
             "cpf": dados['cpf'],
             "nome": dados['nome']
-        })
+        }
+
+        # Só atualiza o status se ele estiver presente no JSON recebido
+        if 'status' in dados:
+            atualizacao["status"] = dados["status"]
+
+        doc_ref.update(atualizacao)
         return jsonify({'mensagem': 'Cadastro alterado com sucesso!'}), 200
     
     else:
@@ -109,5 +116,14 @@ def excluir_cliente(id):
     doc_ref.delete()
     return jsonify({'mensagem': 'Cliente excluída com sucesso!'})
 
+@app.route('/clientes/id/<id>', methods=['GET'])
+def buscar_por_id(id):
+    doc_ref = db.collection('cadastro').document(id)
+    doc = doc_ref.get()
+
+    if doc.exists:
+        return jsonify(doc.to_dict()), 200
+    else:
+        return jsonify({'mensagem': 'Erro! Cliente não encontrado.'}), 404
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8000)
