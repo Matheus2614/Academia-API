@@ -26,19 +26,30 @@ def index():
     return 'API está ligada!'
     
 
-#Listar charadas
+#Listar clientes
 @app.route('/clientes', methods=['GET'])
 def clientes_lista():
     clientes = []
-    lista = db.collection('cadastro').stream()
-    for item in lista:
-        clientes.append(item.to_dict()) #Transforma em dicionário cada charada do firebase
+    termo_busca = request.args.get('busca', '').strip().lower()
+    colecao = db.collection('cadastro')
+
+    if termo_busca:
+        query_nome = colecao.where('nome_lower', '>=', termo_busca).where('nome_lower', '<=', termo_busca + '\uf8ff').stream()
+        clientes = [doc.to_dict() for doc in query_nome]
+
+        if not clientes:
+            query_cpf = colecao.where('cpf', '==', termo_busca).stream()
+            clientes = [doc.to_dict() for doc in query_cpf]
+    else:
+        # Sem parâmetro de busca, retorna todos
+        lista = colecao.stream()
+        clientes = [doc.to_dict() for doc in lista]
 
     if clientes:
         return jsonify(clientes), 200
     
     else:
-        return jsonify({'Mensagem': 'Erro! Nenhuma charada encontrada.'}), 404
+        return jsonify({'Mensagem': 'Erro! Nenhum cliente encontrado.'}), 404
 
 @app.route('/clientes/<cpf>', methods=['GET'])
 def busca_por_cpf(cpf):
@@ -70,6 +81,7 @@ def adicionar_clientes():
     db.collection('cadastro').document(str(novo_id)).set({
         "id": novo_id,
         "nome": dados['nome'],
+        "nome_lower": dados['nome'].lower(),
         "cpf": dados['cpf'],
         "status": 'ativo'
 
@@ -91,7 +103,8 @@ def alterar_cadastro(id):
     if doc.exists:
         atualizacao = {
             "cpf": dados['cpf'],
-            "nome": dados['nome']
+            "nome": dados['nome'],
+            "nome_lower": dados['nome'].lower()
         }
 
         # Só atualiza o status se ele estiver presente no JSON recebido
