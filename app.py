@@ -139,4 +139,4 @@ def buscar_por_id(id):
     else:
         return jsonify({'mensagem': 'Erro! Cliente não encontrado.'}), 404
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8000)
+    app.run()
