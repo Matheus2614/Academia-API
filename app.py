@@ -127,7 +127,7 @@ def excluir_cliente(id):
         return jsonify({'mensagem': 'Erro! Cliente não encontrado.'}), 404
 
     doc_ref.delete()
-    return jsonify({'mensagem': 'Cliente excluída com sucesso!'})
+    return jsonify({'mensagem': 'Cliente excluído(a) com sucesso!'})
 
 @app.route('/clientes/id/<id>', methods=['GET'])
 def buscar_por_id(id):
